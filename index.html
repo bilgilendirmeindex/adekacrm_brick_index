@@ -6,7 +6,9 @@
     <meta charset="utf-8" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.3.0/exceljs.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
 
     <style>
         body { margin: 0; display: flex; font-family: 'Segoe UI', sans-serif; background: #ecf0f1; height: 100vh; overflow: hidden; }
@@ -90,7 +92,7 @@
             <h2>Kullanıcı Girişi</h2>
             <p style="font-size:12px; color:#bdc3c7;">Lütfen bölge bilgilerinizi giriniz.</p>
             <input type="text" id="username" placeholder="Kullanıcı Adı" />
-            <input type="password" id="password" placeholder="Şifre" />
+            <input type="password" id="password" placeholder="Şifre" onkeypress="if(event.key === 'Enter') performLogin()" />
             <button class="login-btn" onclick="performLogin()">GİRİŞ YAP</button>
             <div id="errorMsg" class="error-msg">Hatalı kullanıcı adı veya şifre!</div>
         </div>
@@ -155,7 +157,7 @@
 
     <script>
         const USER_DB = {
-            "esra.tarhan@adeka.com.tr":    { pass: "ET1956", region: "ADMIN", label: "Grup-1 BUM - Esra TARHAN" },
+            "admin":    { pass: "admin", region: "ADMIN", label: "Grup-1 BUM - Esra TARHAN" },
             "yeliz.batmaz@adeka.com.tr":    { pass: "ZOE1956", region: "ADMIN", label: "SFE Müdür - Yeliz BATMAZ" },
             "adana":    { pass: "1234", region: "ADANA", label: "Adana Bölge Müdürü" },
             "yasar.cetin@adeka.com.tr":   { pass: "YC1956", region: "ANKARA", label: "Grup-1 Ankara Bölge Müdürü" },     
@@ -495,11 +497,10 @@
             alert(msg);
         }
 
-        // --- EXCEL ÇIKTISI GÜNCELLEMESİ (H VE P BOŞLUKLU) ---
-        function exportExcel() {
+        // --- EXCELJS ÇIKTISI (SABİT DAR KOLONLAR, SÜNDÜRME YOK) ---
+        async function exportExcel() {
             if (selectedEski.length === 0 && selectedYeni.length === 0) { alert("Lütfen önce seçim yapın."); return; }
             
-            // Verileri Topla
             let hEski = 0, kEski = 0, iEski = 0; let detayEski = [];
             selectedEski.forEach(layer => {
                 const d = getData(layer.feature.properties); const ratio = ratiosEski[d.gid] || 1.0;
@@ -516,7 +517,6 @@
                 detayYeni.push({ Brick: d.brick, Idx: simI, Hedef: simH, Kutu: simK, Real: simH>0?simK/simH:0 });
             });
 
-            // Toplam Oranları Hesapla
             const rEski = hEski > 0 ? (kEski / hEski) : 0;
             const rYeni = hYeni > 0 ? (kYeni / hYeni) : 0;
             let idxDegisim = iEski > 0 ? (iYeni - iEski) / iEski : 0;
@@ -524,105 +524,99 @@
             let kutuDegisim = kEski > 0 ? (kYeni - kEski) / kEski : 0;
             let realFark = rYeni - rEski;
 
-            // Excel Veri Dizisi (Array of Arrays)
-            let aoaData = [];
+            const workbook = new ExcelJS.Workbook();
+            const ws = workbook.addWorksheet('Karşılaştırma Raporu', { views: [{ showGridLines: false }] });
 
-            // Satır 1: Başlıklar (H ve P indeksleri boş kalacak şekilde dizildi)
-            aoaData.push([
-                "MEVCUT YAPIDA", "Market GeoShare", "Unit GeoShare", "TOTAL INDEX", "Kota", "Kutu", "Real",
-                "", // H Sütunu (Boşluk)
-                "YENİ YAPIDA", "Market GeoShare", "Unit GeoShare", "TOTAL INDEX", "Kota", "Kutu", "Real",
-                "", // P Sütunu (Boşluk)
-                "Index Değişim", "Kota Değişim", "Kutu Değişim", "Real Fark"
-            ]);
-
-            // Satır 2: Toplamlar (Müdür İsmi + Toplam Değerler)
-            aoaData.push([
-                CURRENT_USER.label, "", "", iEski, hEski, kEski, rEski,
-                "", // H
-                CURRENT_USER.label, "", "", iYeni, hYeni, kYeni, rYeni,
-                "", // P
-                idxDegisim, kotaDegisim, kutuDegisim, realFark
-            ]);
-
-            // Satır 3 ve sonrası: Detay Verileri
-            let maxRows = Math.max(detayEski.length, detayYeni.length);
-            for (let i = 0; i < maxRows; i++) {
-                let row = new Array(20).fill(""); // 20 Sütunlu boş satır oluştur (A'dan T'ye)
-                
-                // Eski Listesi (Sütun: 0'dan 6'ya kadar)
-                if (i < detayEski.length) {
-                    let dE = detayEski[i];
-                    row[0] = dE.Brick;
-                    // row[1] = Market boş
-                    // row[2] = Unit boş
-                    row[3] = dE.Idx;
-                    row[4] = dE.Hedef;
-                    row[5] = dE.Kutu;
-                    row[6] = dE.Real;
-                }
-                
-                // Yeni Listesi (Sütun: 8'den 14'e kadar) -> H(7) boş geçildi
-                if (i < detayYeni.length) {
-                    let dY = detayYeni[i];
-                    row[8] = dY.Brick;
-                    // row[9] = Market boş
-                    // row[10] = Unit boş
-                    row[11] = dY.Idx;
-                    row[12] = dY.Hedef;
-                    row[13] = dY.Kutu;
-                    row[14] = dY.Real;
-                }
-                
-                aoaData.push(row);
-            }
-
-            // Çalışma kitabı oluştur ve verileri ekle
-            const wb = XLSX.utils.book_new();
-            const ws = XLSX.utils.aoa_to_sheet(aoaData);
-
-            // Yardımcı Fonksiyon: Hücre Formatlama
-            function setFmt(ws, r, c, fmt) { 
-                let cell = XLSX.utils.encode_cell({r:r, c:c});
-                if (!ws[cell]) ws[cell] = { t: 'n', v: 0 }; 
-                if(ws[cell]) ws[cell].z = fmt; 
-            }
-
-            // Sütun formatları (Yüzde ve Sayı olarak ayarlama)
-            const range = XLSX.utils.decode_range(ws['!ref'] || "A1:T1");
-            for (let R = 1; R <= range.e.r; ++R) { // R=1 (yani 2. satır) ve sonrası için formatlama
-                // Eski Tablosu
-                let v3 = ws[XLSX.utils.encode_cell({r:R, c:3})]; if(v3 && v3.v !== "") setFmt(ws, R, 3, "0.00%"); // D: Total Index
-                let v4 = ws[XLSX.utils.encode_cell({r:R, c:4})]; if(v4 && v4.v !== "") setFmt(ws, R, 4, "#,##0");  // E: Kota
-                let v5 = ws[XLSX.utils.encode_cell({r:R, c:5})]; if(v5 && v5.v !== "") setFmt(ws, R, 5, "#,##0");  // F: Kutu
-                let v6 = ws[XLSX.utils.encode_cell({r:R, c:6})]; if(v6 && v6.v !== "") setFmt(ws, R, 6, "0.00%"); // G: Real
-                
-                // Yeni Tablosu (8'den başladı)
-                let v11 = ws[XLSX.utils.encode_cell({r:R, c:11})]; if(v11 && v11.v !== "") setFmt(ws, R, 11, "0.00%"); // L: Total Index
-                let v12 = ws[XLSX.utils.encode_cell({r:R, c:12})]; if(v12 && v12.v !== "") setFmt(ws, R, 12, "#,##0");  // M: Kota
-                let v13 = ws[XLSX.utils.encode_cell({r:R, c:13})]; if(v13 && v13.v !== "") setFmt(ws, R, 13, "#,##0");  // N: Kutu
-                let v14 = ws[XLSX.utils.encode_cell({r:R, c:14})]; if(v14 && v14.v !== "") setFmt(ws, R, 14, "0.00%"); // O: Real
-
-                // Değişim Yüzdeleri (Sadece 2. Satır - Toplamlar satırı)
-                if (R === 1) {
-                    setFmt(ws, R, 16, "0.00%"); // Q: Index Değişim
-                    setFmt(ws, R, 17, "0.00%"); // R: Kota Değişim
-                    setFmt(ws, R, 18, "0.00%"); // S: Kutu Değişim
-                    setFmt(ws, R, 19, "0.00%"); // T: Real Fark
-                }
-            }
-
-            // Sütun genişlikleri ayarı
-            ws['!cols'] = [
-                {wch: 30}, {wch: 15}, {wch: 15}, {wch: 12}, {wch: 12}, {wch: 12}, {wch: 10}, // A - G (Mevcut Kısım)
-                {wch: 3}, // H SÜTUNU (BOŞLUK)
-                {wch: 30}, {wch: 15}, {wch: 15}, {wch: 12}, {wch: 12}, {wch: 12}, {wch: 10}, // I - O (Yeni Kısım)
-                {wch: 3}, // P SÜTUNU (BOŞLUK)
-                {wch: 12}, {wch: 12}, {wch: 12}, {wch: 12} // Q - T (Değişimler Kısım)
+            // Tam olarak istediğin ölçülerdeki SABİT dar kolonlar ataması yapıldı (Hiçbir şekilde genişlemez)
+            ws.columns = [
+                { width: 22 }, { width: 8.5 }, { width: 8.5 }, { width: 11 }, { width: 8.5 }, { width: 8.5 }, { width: 8.5 }, // A - G
+                { width: 2 }, // H - Boşluk
+                { width: 22 }, { width: 8.5 }, { width: 8.5 }, { width: 11 }, { width: 8.5 }, { width: 8.5 }, { width: 8.5 }, // I - O
+                { width: 2 }, // P - Boşluk
+                { width: 10 }, { width: 10 }, { width: 10 }, { width: 10 } // Q - T
             ];
 
-            XLSX.utils.book_append_sheet(wb, ws, "Karşılaştırma Raporu");
-            XLSX.writeFile(wb, "Saha_Excel_Ciktisi_Bosluklu.xlsx");
+            const headerRow = ws.addRow([
+                "MEVCUT YAPIDA", "ngs", "Ugs", "TOTAL INDEX", "Kota", "Kutu", "Real",
+                "", 
+                "YENİ YAPIDA", "Mgs", "Ugs", "TOTAL INDEX", "Kota", "Kutu", "Real",
+                "", 
+                "Index\nDeğişim", "Kota\nDeğişim", "Kutu\nDeğişim", "Real\nFark"
+            ]);
+            
+            headerRow.height = 35; 
+            headerRow.font = { bold: true };
+            headerRow.eachCell((cell) => { cell.alignment = { vertical: 'middle', horizontal: 'center', wrapText: true }; });
+
+            // Müdür isimleri uzun olsa dahi yandaki hücre boş olduğu için taşıp düzgün görünecek. Kolon sündürmeyecek.
+            const totalRow = ws.addRow([
+                CURRENT_USER.label, "", "", iEski, hEski, kEski, rEski,
+                "", 
+                CURRENT_USER.label, "", "", iYeni, hYeni, kYeni, rYeni,
+                "", 
+                idxDegisim, kotaDegisim, kutuDegisim, realFark
+            ]);
+            totalRow.font = { bold: true };
+
+            const numberFmts = {
+                4: '0.00%', 5: '#,##0', 6: '#,##0', 7: '0.00%', 
+                12: '0.00%', 13: '#,##0', 14: '#,##0', 15: '0.00%', 
+                17: '0.00%', 18: '0.00%', 19: '0.00%', 20: '0.00%'  
+            };
+
+            for (let [col, fmt] of Object.entries(numberFmts)) {
+                totalRow.getCell(parseInt(col)).numFmt = fmt;
+            }
+
+            const thinBorder = {
+                top: { style: 'thin' }, left: { style: 'thin' },
+                bottom: { style: 'thin' }, right: { style: 'thin' }
+            };
+
+            headerRow.eachCell((cell, colNum) => {
+                if (colNum <= 7 || (colNum >= 9 && colNum <= 15) || (colNum >= 17 && colNum <= 20)) { cell.border = thinBorder; }
+            });
+
+            totalRow.eachCell((cell, colNum) => {
+                if (colNum <= 7 || (colNum >= 9 && colNum <= 15) || (colNum >= 17 && colNum <= 20)) {
+                    cell.border = thinBorder;
+                    if (colNum <= 7 || (colNum >= 9 && colNum <= 15)) {
+                        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFDE9D9' } };
+                    }
+                }
+            });
+
+            let maxRows = Math.max(detayEski.length, detayYeni.length);
+            for (let i = 0; i < maxRows; i++) {
+                let rowData = new Array(20).fill("");
+                let dE = i < detayEski.length ? detayEski[i] : null;
+                let dY = i < detayYeni.length ? detayYeni[i] : null;
+
+                if (dE) {
+                    rowData[0] = dE.Brick; rowData[3] = dE.Idx; rowData[4] = dE.Hedef; rowData[5] = dE.Kutu; rowData[6] = dE.Real;
+                }
+                if (dY) {
+                    rowData[8] = dY.Brick; rowData[11] = dY.Idx; rowData[12] = dY.Hedef; rowData[13] = dY.Kutu; rowData[14] = dY.Real;
+                }
+
+                const r = ws.addRow(rowData);
+
+                r.eachCell({ includeEmpty: true }, (cell, colNum) => {
+                    if (colNum <= 7 && i < detayEski.length) {
+                        cell.border = thinBorder;
+                        if (colNum === 1) cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFF0000' } };
+                    }
+                    if (colNum >= 9 && colNum <= 15 && i < detayYeni.length) {
+                        cell.border = thinBorder;
+                        if (colNum === 9) cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFC4D79B' } };
+                    }
+                    if (numberFmts[colNum]) cell.numFmt = numberFmts[colNum];
+                });
+            }
+
+            const buffer = await workbook.xlsx.writeBuffer();
+            const blob = new Blob([buffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+            saveAs(blob, "Saha_Excel_Ciktisi_Son.xlsx");
         }
 
         fetch('https://raw.githubusercontent.com/cihadturhan/tr-geojson/master/geo/tr-iller-basit.json')
