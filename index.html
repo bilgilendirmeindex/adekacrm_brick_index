@@ -28,7 +28,7 @@
         .mode-container { display: flex; margin-top: 10px; gap: 5px; }
         .mode-btn { flex: 1; padding: 8px; font-weight: bold; border: none; cursor: pointer; border-radius: 4px; opacity: 0.5; transition: 0.2s; color: white; }
         .mode-btn.eski { background: #c0392b; }
-        .mode-btn.yeni { background: #2980b9; }
+        .mode-btn.yeni { background: #27ae60; }
         .mode-btn.active { opacity: 1; box-shadow: inset 0 0 0 2px #fff; }
 
         .search-container { padding: 10px 15px; position: relative; display: flex; gap: 5px; }
@@ -47,7 +47,7 @@
         .selected-list { flex-grow: 1; overflow-y: auto; padding: 10px 15px; }
         .selected-card { background: #34495e; margin-bottom: 10px; border-radius: 4px; overflow: hidden; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
         .selected-card.eski-card { border-left: 4px solid #e74c3c; }
-        .selected-card.yeni-card { border-left: 4px solid #3498db; }
+        .selected-card.yeni-card { border-left: 4px solid #2ecc71; }
         
         .card-header { padding: 8px 10px; background: rgba(0,0,0,0.2); display: flex; justify-content: space-between; align-items: center; }
         .header-left { flex-grow: 1; display:flex; flex-direction:column; }
@@ -68,7 +68,7 @@
         .total-grid-header { font-weight: bold; font-size: 11px; margin-bottom: 5px; padding-bottom: 5px; border-bottom: 1px solid rgba(255,255,255,0.1); color: #bdc3c7; }
         .col-left { text-align: left; color: #95a5a6; }
         .col-eski { color: #e74c3c; font-weight: bold; }
-        .col-yeni { color: #3498db; font-weight: bold; }
+        .col-yeni { color: #2ecc71; font-weight: bold; }
         .val-text { color: white; font-weight:bold; }
         
         .btn-group { display: flex; gap: 5px; padding: 5px 0; }
@@ -89,6 +89,7 @@
 <body>
     <div id="loginOverlay">
         <div class="login-box">
+            <h2>GRUP-1 INDEX Çalışması</h2>
             <h2>Kullanıcı Girişi</h2>
             <p style="font-size:12px; color:#bdc3c7;">Lütfen bölge bilgilerinizi giriniz.</p>
             <input type="text" id="username" placeholder="Kullanıcı Adı" />
@@ -101,7 +102,7 @@
     <div id="map"></div>
     <div id="sidebar">
         <div class="header">
-            <h2>Brick & Index Analizi</h2>
+            <h2>GRUP-1 / Brick & Index Analizi</h2>
             <div id="welcomeUser" style="font-size:12px; color:#f1c40f; margin-top:5px;"></div>
             <div class="mode-container">
                 <button id="btnEski" class="mode-btn eski active" onclick="setMode('eski')">1. ESKİ SEÇİM</button>
@@ -120,7 +121,7 @@
             <div class="total-grid total-grid-header">
                 <div class="col-left">METRİK</div>
                 <div class="col-eski">ESKİ (Kırmızı)</div>
-                <div class="col-yeni">YENİ (Mavi)</div>
+                <div class="col-yeni">YENİ (Yeşil)</div>
             </div>
             <div class="total-grid">
                 <div class="col-left">Seçilen Adet:</div>
@@ -224,7 +225,7 @@
             if (brickLayer) map.removeLayer(brickLayer); 
 
             brickLayer = L.geoJSON(FILTERED_GEOJSON, {
-                style: (feature) => ({ fillColor: getColor(feature.properties.display_il), weight: 1, opacity: 1, color: 'white', fillOpacity: 0.6 }),
+                style: (feature) => ({ fillColor: '#caddde', weight: 1, opacity: 1, color: 'white', fillOpacity: 0.6 }),
                 onEachFeature: (feature, layer) => {
                     const d = getData(feature.properties);
                     layerMap[feature.properties.gid] = layer;
@@ -248,11 +249,6 @@
 
         function fmtPct(val) { return "%" + (val * 100).toFixed(2).replace('.', ','); }
         function fmtN2(val) { return val.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
-        function getColor(str) {
-            let hash = 0; if (!str) return '#95a5a6';
-            for (let i = 0; i < str.length; i++) hash = str.charCodeAt(i) + ((hash << 5) - hash);
-            return `hsl(${Math.abs(hash % 360)}, 60%, 50%)`;
-        }
 
         function getData(props) {
             return {
@@ -268,13 +264,16 @@
             const inYeni = selectedYeni.includes(layer);
             
             if (inEski && inYeni) {
+                // Hem eski hem yenide seçili (Kesişim) -> Mor
                 layer.setStyle({ fillColor: '#9b59b6', fillOpacity: 1, color: 'black', weight: 2 });
                 layer.bringToFront();
             } else if (inEski) {
+                // Sadece eskide var, yenide yok -> Kırmızı
                 layer.setStyle({ fillColor: '#e74c3c', fillOpacity: 1, color: 'black', weight: 2 });
                 layer.bringToFront();
             } else if (inYeni) {
-                layer.setStyle({ fillColor: '#3498db', fillOpacity: 1, color: 'black', weight: 2 });
+                // Eskide yok, sadece yenide var -> Yeşil
+                layer.setStyle({ fillColor: '#2ecc71', fillOpacity: 1, color: 'black', weight: 2 });
                 layer.bringToFront();
             } else {
                 brickLayer.resetStyle(layer);
@@ -360,7 +359,7 @@
 
             let hYeni = 0, kYeni = 0, iYeni = 0;
             if (selectedYeni.length > 0) {
-                html += `<div class="list-header-tag" style="background:#2980b9;">YENİ SEÇİMLER (${selectedYeni.length})</div>`;
+                html += `<div class="list-header-tag" style="background:#27ae60;">YENİ SEÇİMLER (${selectedYeni.length})</div>`;
                 selectedYeni.forEach(layer => {
                     const d = getData(layer.feature.properties); const ratio = ratiosYeni[d.gid] || 1.0;
                     hYeni += d.raw_hedef * ratio; kYeni += d.raw_kutu * ratio; iYeni += d.raw_idx * ratio;
@@ -497,7 +496,7 @@
             alert(msg);
         }
 
-        // --- EXCELJS ÇIKTISI (SABİT DAR KOLONLAR, SÜNDÜRME YOK) ---
+        // --- EXCELJS ÇIKTISI (SABİT DAR KOLONLAR, SÜNDÜRME YOK, DİNAMİK RENKLENDİRME) ---
         async function exportExcel() {
             if (selectedEski.length === 0 && selectedYeni.length === 0) { alert("Lütfen önce seçim yapın."); return; }
             
@@ -517,6 +516,10 @@
                 detayYeni.push({ Brick: d.brick, Idx: simI, Hedef: simH, Kutu: simK, Real: simH>0?simK/simH:0 });
             });
 
+            // Sadece Brick isimlerini içeren diziler oluşturuyoruz ki hızlıca karşılaştırma yapabilelim
+            const eskiBrickNames = detayEski.map(x => x.Brick);
+            const yeniBrickNames = detayYeni.map(x => x.Brick);
+
             const rEski = hEski > 0 ? (kEski / hEski) : 0;
             const rYeni = hYeni > 0 ? (kYeni / hYeni) : 0;
             let idxDegisim = iEski > 0 ? (iYeni - iEski) / iEski : 0;
@@ -527,7 +530,6 @@
             const workbook = new ExcelJS.Workbook();
             const ws = workbook.addWorksheet('Karşılaştırma Raporu', { views: [{ showGridLines: false }] });
 
-            // Tam olarak istediğin ölçülerdeki SABİT dar kolonlar ataması yapıldı (Hiçbir şekilde genişlemez)
             ws.columns = [
                 { width: 22 }, { width: 8.5 }, { width: 8.5 }, { width: 11 }, { width: 8.5 }, { width: 8.5 }, { width: 8.5 }, // A - G
                 { width: 2 }, // H - Boşluk
@@ -537,9 +539,9 @@
             ];
 
             const headerRow = ws.addRow([
-                "MEVCUT YAPIDA", "ngs", "Ugs", "TOTAL INDEX", "Kota", "Kutu", "Real",
+                "MEVCUT YAPIDA", "MGS", "UGS", "TOTAL INDEX", "Kota", "Kutu", "Real",
                 "", 
-                "YENİ YAPIDA", "Mgs", "Ugs", "TOTAL INDEX", "Kota", "Kutu", "Real",
+                "YENİ YAPIDA", "MGS", "UGS", "TOTAL INDEX", "Kota", "Kutu", "Real",
                 "", 
                 "Index\nDeğişim", "Kota\nDeğişim", "Kutu\nDeğişim", "Real\nFark"
             ]);
@@ -548,7 +550,6 @@
             headerRow.font = { bold: true };
             headerRow.eachCell((cell) => { cell.alignment = { vertical: 'middle', horizontal: 'center', wrapText: true }; });
 
-            // Müdür isimleri uzun olsa dahi yandaki hücre boş olduğu için taşıp düzgün görünecek. Kolon sündürmeyecek.
             const totalRow = ws.addRow([
                 CURRENT_USER.label, "", "", iEski, hEski, kEski, rEski,
                 "", 
@@ -602,14 +603,28 @@
                 const r = ws.addRow(rowData);
 
                 r.eachCell({ includeEmpty: true }, (cell, colNum) => {
+                    // --- ESKİ SEÇİM SÜTUNLARI (A-G) ---
                     if (colNum <= 7 && i < detayEski.length) {
                         cell.border = thinBorder;
-                        if (colNum === 1) cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFF0000' } };
+                        
+                        // ŞART: Eğer bu Brick 'Eski'de var ama 'Yeni'de YOKSA (KIRMIZI BOYAMA)
+                        if (colNum === 1 && dE && !yeniBrickNames.includes(dE.Brick)) {
+                            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE74C3C' } }; 
+                            cell.font = { color: { argb: 'FFFFFFFF' }, bold: true }; 
+                        }
                     }
+                    
+                    // --- YENİ SEÇİM SÜTUNLARI (I-O) ---
                     if (colNum >= 9 && colNum <= 15 && i < detayYeni.length) {
                         cell.border = thinBorder;
-                        if (colNum === 9) cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFC4D79B' } };
+                        
+                        // ŞART: Eğer bu Brick 'Yeni'de var ama 'Eski'de YOKSA (YEŞİL BOYAMA)
+                        if (colNum === 9 && dY && !eskiBrickNames.includes(dY.Brick)) {
+                            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF2ECC71' } }; 
+                            cell.font = { color: { argb: 'FFFFFFFF' }, bold: true }; 
+                        }
                     }
+                    
                     if (numberFmts[colNum]) cell.numFmt = numberFmts[colNum];
                 });
             }
