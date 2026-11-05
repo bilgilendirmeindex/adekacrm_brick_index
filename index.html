@@ -11,8 +11,6 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.3.0/exceljs.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
-    
-    <!-- Harita Görüntüsü alabilmek için kütüphane -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 
     <style>
@@ -63,6 +61,8 @@
         .btn-top.primary:hover { background: #1e293b; box-shadow: var(--shadow-sm); transform: translateY(-1px); }
         .btn-top.design-mode { background: #ec4899; color: white; border: none; }
         .btn-top.design-mode:hover { background: #db2777; box-shadow: 0 4px 12px rgba(236, 72, 153, 0.3); }
+        .btn-top.design-export { background: #be185d; color: white; border: none; }
+        .btn-top.design-export:hover { background: #9d174d; box-shadow: var(--shadow-sm); transform: translateY(-1px); }
         .btn-top.busy { opacity: 0.7; pointer-events: none; cursor: not-allowed; }
 
         .panel-ui { position: absolute; top: 110px; bottom: 20px; background: var(--surface); backdrop-filter: blur(10px); border-radius: var(--radius); box-shadow: var(--shadow); border: 1px solid var(--border); display: flex; flex-direction: column; z-index: 1000; overflow: hidden; transition: 0.4s cubic-bezier(0.16, 1, 0.3, 1); }
@@ -75,20 +75,44 @@
         .slide-out-left { transform: translateX(-120%); opacity: 0; pointer-events: none;}
         .slide-out-right { transform: translateX(120%); opacity: 0; pointer-events: none;}
 
-        .design-head { padding: 20px; border-bottom: 1px solid var(--border); background: #fdf2f8; }
+        .design-head { padding: 16px 20px; border-bottom: 1px solid var(--border); background: #fdf2f8; }
         .design-head h3 { font-size: 16px; font-weight: 800; color: #be185d; display: flex; align-items: center; gap: 8px;}
-        .design-head p { font-size: 12px; color: #831843; margin-top: 5px; line-height: 1.4;}
-        .palette-container { padding: 20px; flex: 1; overflow-y: auto; }
+        .design-head p { font-size: 12px; color: #831843; margin-top: 4px; line-height: 1.4;}
+        
+        /* YENİ BÖLGE OLUŞTURMA BARI */
+        .new-region-bar { padding: 12px 20px; background: #fff; border-bottom: 1px solid var(--border); }
+        .new-region-bar label { display: block; font-size: 10px; font-weight: 700; color: #be185d; margin-bottom: 6px; letter-spacing: 0.4px; text-transform: uppercase; }
+        .new-region-row { display: flex; gap: 6px; align-items: center; }
+        .new-region-input { flex: 1; padding: 8px 10px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 12px; font-family: inherit; outline: none; transition: 0.2s; }
+        .new-region-input:focus { border-color: #ec4899; box-shadow: 0 0 0 2px rgba(236, 72, 153, 0.15); }
+        .new-region-color { width: 34px; height: 34px; border: 1px solid #cbd5e1; border-radius: 8px; padding: 2px; cursor: pointer; background: #fff; flex-shrink: 0; }
+        .btn-new-region { padding: 0 12px; height: 34px; background: #be185d; color: #fff; border: none; border-radius: 8px; font-size: 12px; font-weight: 700; font-family: inherit; cursor: pointer; display: flex; align-items: center; gap: 5px; transition: 0.2s; flex-shrink: 0; }
+        .btn-new-region:hover { background: #9d174d; }
+        .del-region-btn { color: #cbd5e1; cursor: pointer; padding: 2px 5px; font-size: 12px; transition: 0.2s; margin-left: 6px; }
+        .del-region-btn:hover { color: #ef4444; }
+
+        .palette-container { padding: 15px 20px; flex: 1; overflow-y: auto; }
         .palette-item { display: flex; flex-direction: column; padding: 12px 15px; border-radius: 12px; margin-bottom: 10px; background: #fff; border: 2px solid #e2e8f0; cursor: pointer; transition: 0.2s;}
         .palette-item:hover { border-color: #cbd5e1; transform: translateY(-1px); }
         .palette-item.active-brush { border-color: var(--text-dark); box-shadow: 0 4px 12px rgba(0,0,0,0.1); background: #fdfdfd;}
         .color-dot { width: 16px; height: 16px; border-radius: 50%; display: inline-block; margin-right: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.2); vertical-align: middle;}
         .region-name { font-weight: 700; font-size: 13px; color: var(--text-dark); }
-        .transfer-box { padding: 20px; border-top: 1px solid var(--border); background: #f8fafc; }
-        .transfer-box h4 { font-size: 13px; font-weight: 700; margin-bottom: 12px; color: var(--text-dark); }
+        
+        /* TRANSFER BOX STİLLERİ */
+        .transfer-box { padding: 16px 20px; border-top: 1px solid var(--border); background: #f8fafc; }
+        .transfer-box h4 { font-size: 13px; font-weight: 700; margin-bottom: 12px; color: var(--text-dark); border-bottom:1px solid #e2e8f0; padding-bottom:8px;}
         .transfer-select { width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #cbd5e1; margin-bottom: 10px; font-family: inherit; font-size: 13px; outline: none; }
-        .btn-transfer { width: 100%; padding: 12px; background: var(--text-dark); color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; transition: 0.2s;}
+        .btn-transfer { width: 100%; padding: 10px; background: var(--text-dark); color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; transition: 0.2s;}
         .btn-transfer:hover { background: #1e293b; }
+
+        /* ÇOKLU İL SEÇİM KUTUSU VE BRICK AUTOFILL STİLLERİ */
+        .city-filter-input { width: 100%; padding: 7px 10px; border-radius: 8px; border: 1px solid #cbd5e1; font-size: 12px; font-family: inherit; margin-bottom: 6px; outline: none; background: #fff; }
+        .city-filter-input:focus { border-color: var(--primary); }
+        .city-checkbox-list { max-height: 105px; overflow-y: auto; border: 1px solid #cbd5e1; border-radius: 8px; background: #fff; padding: 4px 6px; margin-bottom: 8px; }
+        .city-checkbox-item { display: flex; align-items: center; gap: 8px; padding: 4px 6px; font-size: 12px; color: var(--text-dark); cursor: pointer; border-radius: 6px; user-select: none; }
+        .city-checkbox-item:hover { background: #f1f5f9; }
+        .city-checkbox-item input[type="checkbox"] { accent-color: var(--primary); cursor: pointer; width: 14px; height: 14px; }
+        #designBrickResults { position: absolute; left: 0; right: 0; bottom: 100%; margin-bottom: 6px; background: #fff; max-height: 210px; overflow-y: auto; display: none; z-index: 2005; border-radius: 12px; box-shadow: 0 -8px 25px rgba(0,0,0,0.15); border: 1px solid #cbd5e1; }
 
         .panel-titlebar { display: flex; justify-content: space-between; align-items: center; padding: 14px 20px; border-bottom: 1px solid var(--border); }
         .panel-title { display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 700; color: var(--text-dark); }
@@ -206,7 +230,8 @@
                 <i class="fa-solid fa-palette"></i> <span>Bölge Tasarımına Geç</span>
             </button>
             <button class="btn-top outline" id="btnReset" onclick="resetMap()"><i class="fa-solid fa-rotate-left"></i> Sıfırla</button>
-            <button class="btn-top primary" id="btnDownload" onclick="exportExcel()"><i class="fa-solid fa-download"></i> Rapor İndir</button>
+            <button class="btn-top primary" id="btnDownloadAnalysis" onclick="exportAnalysisExcel()"><i class="fa-solid fa-download"></i> Analiz Raporu İndir</button>
+            <button class="btn-top design-export" id="btnDownloadDesign" style="display:none;" onclick="exportDesignerExcel()"><i class="fa-solid fa-file-excel"></i> Tasarım Raporu İndir</button>
         </div>
     </div>
 
@@ -221,11 +246,43 @@
                 <button onclick="resetDesigner()" title="Sıfırla" style="background:#fff; border:1px solid #cbd5e1; padding:6px 10px; border-radius:8px; cursor:pointer; font-size:11px; font-weight:700; color:#475569;"><i class="fa-solid fa-rotate-left"></i> Sıfırla</button>
             </div>
         </div>
+
+        <!-- YENİ BÖLGE OLUŞTURMA ALANI -->
+        <div class="new-region-bar">
+            <label><i class="fa-solid fa-plus-circle"></i> Yeni Bölge Oluştur</label>
+            <div class="new-region-row">
+                <input type="text" id="newRegionNameInput" class="new-region-input" placeholder="Yeni bölge adı (Örn: MARMARA3)..." onkeypress="if(event.key === 'Enter') createNewRegion()">
+                <input type="color" id="newRegionColorInput" class="new-region-color" value="#e11d48" title="Bölge Rengi Seçin">
+                <button class="btn-new-region" onclick="createNewRegion()"><i class="fa-solid fa-plus"></i> Ekle</button>
+            </div>
+        </div>
+
         <div class="palette-container" id="paletteContainer"></div>
         <div class="transfer-box">
-            <h4><i class="fa-solid fa-truck-fast"></i> Toplu İl Transferi</h4>
-            <select class="transfer-select" id="transferCitySelect"><option value="">İl Seçiniz...</option></select>
-            <button class="btn-transfer" onclick="executeTransfer()"><i class="fa-solid fa-paint-roller"></i> Seçili İlin Tamamını Boya</button>
+            <h4><i class="fa-solid fa-truck-fast"></i> Toplu Transfer</h4>
+            
+            <div style="margin-bottom:12px;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+                    <label style="font-size:11px; font-weight:600; color:#64748b;">İL BAZLI TRANSFER (<span id="selectedCityCount">0</span> Seçili)</label>
+                    <div style="display:flex; gap:8px;">
+                        <a href="javascript:void(0)" onclick="toggleAllCities(true)" style="font-size:10px; font-weight:700; color:var(--primary); text-decoration:none;">Tümünü Seç</a>
+                        <a href="javascript:void(0)" onclick="toggleAllCities(false)" style="font-size:10px; font-weight:700; color:var(--eski-color); text-decoration:none;">Temizle</a>
+                    </div>
+                </div>
+                <input type="text" id="cityFilterInput" class="city-filter-input" placeholder="İl filtrele (Örn: ANK)..." oninput="filterCityList()">
+                <div id="transferCityList" class="city-checkbox-list"></div>
+                <button class="btn-transfer" onclick="executeTransfer()"><i class="fa-solid fa-paint-roller"></i> Seçili İlleri Boya</button>
+            </div>
+            
+            <div style="border-top:1px solid #e2e8f0; padding-top:12px;">
+                <label style="font-size:11px; font-weight:600; color:#64748b;">BRİCK BAZLI TRANSFER (Çoklu Eklenebilir)</label>
+                <div class="search-wrap" style="margin-top:5px;">
+                    <i class="fa-solid fa-cube"></i>
+                    <input type="text" id="designBrickInput" placeholder="Brick veya İl adı yazın (Örn: ANK)..." autocomplete="off" oninput="searchDesignBrick()" onpaste="handlePaste(event)" onkeypress="if(event.key === 'Enter') bulkTransferBricks()">
+                    <button class="add-btn" onclick="bulkTransferBricks()"><i class="fa-solid fa-check"></i> BOYA</button>
+                    <div id="designBrickResults"></div>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -348,10 +405,11 @@
         let baseBrickRegions = {};   
         let customBrickRegions = {}; 
         let regionColors = {};     
+        let createdRegions = new Set(); // Kullanıcının sonradan oluşturduğu yeni bölgeler (Örn: MARMARA3)
         let activeBrush = null;    
         let selectedDesignerRegion = 'TÜM TÜRKİYE'; 
         
-        const PALETTE = ['#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#8b5cf6', '#06b6d4', '#ec4899', '#f97316', '#14b8a6', '#6366f1', '#84cc16', '#eab308'];
+        const PALETTE = ['#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#8b5cf6', '#06b6d4', '#ec4899', '#f97316', '#14b8a6', '#6366f1', '#84cc16', '#eab308', '#e11d48', '#7c3aed', '#0d9488', '#d97706', '#2563eb', '#db2777'];
         
         try { rawGeoJSON = JSON.parse(document.getElementById('geoData').textContent); } catch(e) { console.error(e); }
         
@@ -360,6 +418,15 @@
         L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}', { maxZoom: 16, crossOrigin: true }).addTo(map);
         
         let layerMap = {}; let brickLayer = null; let HAS_VIRTUAL = false;
+
+        // Dışarı tıklanınca brick autofill listesini kapat
+        document.addEventListener('click', function(e) {
+            const res = document.getElementById('designBrickResults');
+            const inp = document.getElementById('designBrickInput');
+            if (res && inp && !res.contains(e.target) && e.target !== inp) {
+                res.style.display = 'none';
+            }
+        });
 
         function performLogin() {
             const u = document.getElementById('username').value.toLowerCase().trim();
@@ -406,6 +473,8 @@
             const analysisTable = document.getElementById('analysisCompTable');
             const designerBox = document.getElementById('designerCompBox');
             const rightTitle = document.getElementById('rightPanelTitle');
+            const btnDownAnalysis = document.getElementById('btnDownloadAnalysis');
+            const btnDownDesign = document.getElementById('btnDownloadDesign');
 
             if (appMode === 'analysis') {
                 appMode = 'designer';
@@ -418,6 +487,8 @@
                 designerBox.style.display = 'block';
 
                 document.getElementById('btnReset').style.display = 'none'; 
+                btnDownAnalysis.style.display = 'none';
+                btnDownDesign.style.display = 'flex';
                 setTimeout(() => { designP.classList.add('active'); }, 200);
 
                 selectDesignerRegion('TÜM TÜRKİYE');
@@ -433,6 +504,8 @@
 
                 designP.classList.remove('active');
                 document.getElementById('btnReset').style.display = 'flex'; 
+                btnDownAnalysis.style.display = 'flex';
+                btnDownDesign.style.display = 'none';
                 setTimeout(() => { leftP.classList.remove('slide-out-left'); }, 200);
             }
             if(brickLayer) { brickLayer.eachLayer(l => updateLayerStyle(l)); }
@@ -519,13 +592,110 @@
             let rArray = Array.from(uniqueRegions).sort();
             rArray.forEach((r, idx) => { regionColors[r] = PALETTE[idx % PALETTE.length]; });
 
-            const citySelect = document.getElementById('transferCitySelect');
-            citySelect.innerHTML = '<option value="">İl Seçiniz...</option>';
+            // Yeni oluşturulacak bölge için sıradaki rengi hazırla
+            const colorInp = document.getElementById('newRegionColorInput');
+            if (colorInp) colorInp.value = PALETTE[rArray.length % PALETTE.length];
+
+            const cityList = document.getElementById('transferCityList');
+            cityList.innerHTML = '';
             Array.from(uniqueCities).sort().forEach(city => {
-                const opt = document.createElement('option');
-                opt.value = city; opt.innerText = city; citySelect.appendChild(opt);
+                if (!city) return;
+                const lbl = document.createElement('label');
+                lbl.className = 'city-checkbox-item';
+                lbl.innerHTML = `<input type="checkbox" value="${city}" onchange="updateSelectedCityCount()"> <span>${city}</span>`;
+                cityList.appendChild(lbl);
             });
+            updateSelectedCityCount();
             renderPalette();
+        }
+
+        // YENİ BÖLGE EKLEME VE SİLME FONKSİYONLARI
+        function createNewRegion() {
+            const nameInp = document.getElementById('newRegionNameInput');
+            const colorInp = document.getElementById('newRegionColorInput');
+            const rawName = (nameInp.value || '').trim().toLocaleUpperCase('tr');
+
+            if (!rawName) {
+                alert("Lütfen yeni bölge adını yazın (Örn: MARMARA3).");
+                return;
+            }
+            if (rawName === 'TÜM TÜRKİYE') {
+                alert("Bu isim sistem tarafından kullanılmaktadır.");
+                return;
+            }
+            const exists = Object.keys(regionColors).some(k => k.toLocaleUpperCase('tr') === rawName);
+            if (exists) {
+                alert(`'${rawName}' adında bir bölge zaten mevcut!`);
+                return;
+            }
+
+            regionColors[rawName] = colorInp.value || '#e11d48';
+            createdRegions.add(rawName);
+            activeBrush = rawName;
+            nameInp.value = '';
+
+            // Bir sonraki bölge için paletten yeni renk öner
+            const nextIdx = Object.keys(regionColors).length % PALETTE.length;
+            colorInp.value = PALETTE[nextIdx];
+
+            selectDesignerRegion(rawName);
+        }
+
+        function deleteCustomRegion(regName, e) {
+            if (e) e.stopPropagation();
+            if (!confirm(`'${regName}' bölgesini silmek istediğinize emin misiniz?\n(Bu bölgeye aktarılan tüm brick'ler orijinal bölgelerine geri dönecektir)`)) return;
+
+            FILTERED_GEOJSON.features.forEach(f => {
+                const gid = f.properties.gid;
+                if (customBrickRegions[gid] === regName) {
+                    customBrickRegions[gid] = baseBrickRegions[gid];
+                    const l = layerMap[gid];
+                    if (l) updateLayerStyle(l);
+                }
+            });
+
+            delete regionColors[regName];
+            createdRegions.delete(regName);
+
+            if (activeBrush === regName) activeBrush = null;
+            if (selectedDesignerRegion === regName) selectedDesignerRegion = 'TÜM TÜRKİYE';
+
+            selectDesignerRegion(selectedDesignerRegion);
+        }
+
+        function updateSelectedCityCount() {
+            const count = document.querySelectorAll('#transferCityList input[type="checkbox"]:checked').length;
+            const el = document.getElementById('selectedCityCount');
+            if (el) el.innerText = count;
+        }
+
+        function filterCityList() {
+            const val = document.getElementById('cityFilterInput').value.toLocaleLowerCase('tr').trim();
+            document.querySelectorAll('#transferCityList .city-checkbox-item').forEach(lbl => {
+                const text = lbl.innerText.toLocaleLowerCase('tr');
+                lbl.style.display = text.includes(val) ? 'flex' : 'none';
+            });
+        }
+
+        function toggleAllCities(state) {
+            document.querySelectorAll('#transferCityList .city-checkbox-item').forEach(lbl => {
+                if (lbl.style.display !== 'none') {
+                    const cb = lbl.querySelector('input[type="checkbox"]');
+                    if (cb) cb.checked = state;
+                }
+            });
+            updateSelectedCityCount();
+        }
+
+        function getRegionStats(regionMap) {
+            let stats = {};
+            Object.keys(regionColors).forEach(r => { stats[r] = { count: 0, idx: 0 }; });
+            FILTERED_GEOJSON.features.forEach(f => {
+                let gid = f.properties.gid;
+                let r = regionMap[gid];
+                if (r && stats[r]) { stats[r].count++; stats[r].idx += getData(f.properties).raw_idx; }
+            });
+            return stats;
         }
 
         function renderPalette() {
@@ -560,6 +730,7 @@
             Object.keys(regionColors).forEach(reg => {
                 const div = document.createElement('div');
                 let isSelectedForInspect = selectedDesignerRegion === reg;
+                let isCustomCreated = createdRegions.has(reg);
                 div.className = `palette-item ${activeBrush === reg ? 'active-brush' : ''}`;
                 div.style.borderColor = isSelectedForInspect ? 'var(--primary)' : '#e2e8f0';
                 div.style.background = isSelectedForInspect ? '#eef2ff' : '#fff';
@@ -569,14 +740,22 @@
                     selectDesignerRegion(reg); 
                 }; 
                 
-                let b = baseStats[reg]; let c = customStats[reg];
+                let b = baseStats[reg] || { count: 0, idx: 0 };
+                let c = customStats[reg] || { count: 0, idx: 0 };
                 let idxDiff = c.idx - b.idx;
                 let diffHtml = Math.abs(idxDiff) > 0.0001 ? `<span style="color:${idxDiff>0?'#10b981':'#ef4444'}; font-weight:800; font-size:10px;">(${idxDiff>0?'+':''}${fmtPct(idxDiff)})</span>` : '';
 
                 div.innerHTML = `
                     <div style="display:flex; justify-content:space-between; align-items:center; width:100%;">
-                        <div class="region-name"><span class="color-dot" style="background:${regionColors[reg]}"></span> ${reg} ${activeBrush === reg ? '<span style="font-size:9px; background:var(--primary); color:#fff; padding:2px 6px; border-radius:4px; margin-left:6px;">Fırça</span>' : ''}</div>
-                        <div style="font-size:11px; font-weight:700; color:#475569;">${c.count} Brick</div>
+                        <div class="region-name">
+                            <span class="color-dot" style="background:${regionColors[reg]}"></span> ${reg}
+                            ${isCustomCreated ? '<span style="font-size:9px; background:#fce7f3; color:#be185d; padding:2px 6px; border-radius:4px; margin-left:5px; font-weight:800;">YENİ</span>' : ''}
+                            ${activeBrush === reg ? '<span style="font-size:9px; background:var(--primary); color:#fff; padding:2px 6px; border-radius:4px; margin-left:5px;">Fırça</span>' : ''}
+                        </div>
+                        <div style="font-size:11px; font-weight:700; color:#475569; display:flex; align-items:center;">
+                            ${c.count} Brick
+                            ${isCustomCreated ? `<i class="fa-solid fa-trash del-region-btn" title="Bu yeni bölgeyi sil" onclick="deleteCustomRegion('${reg}', event)"></i>` : ''}
+                        </div>
                     </div>
                     <div style="font-size:11px; color:#64748b; margin-top:4px; display:flex; justify-content:space-between; width:100%;">
                         <span>Index: <b style="color:#059669;">${fmtPct(c.idx)}</b></span> ${diffHtml}
@@ -585,30 +764,140 @@
             });
         }
 
-        function getRegionStats(regionMap) {
-            let stats = {};
-            Object.keys(regionColors).forEach(r => { stats[r] = { count: 0, idx: 0 }; });
-            FILTERED_GEOJSON.features.forEach(f => {
-                let gid = f.properties.gid;
-                let r = regionMap[gid];
-                if (r && stats[r]) { stats[r].count++; stats[r].idx += getData(f.properties).raw_idx; }
-            });
-            return stats;
-        }
-
         function executeTransfer() {
             if (!activeBrush) { alert("Lütfen önce listeden bir Bölge (Fırça) seçin!"); return; }
-            const city = document.getElementById('transferCitySelect').value;
-            if (!city) { alert("Lütfen taşınacak ili seçin."); return; }
+            const checkedBoxes = document.querySelectorAll('#transferCityList input[type="checkbox"]:checked');
+            if (checkedBoxes.length === 0) { alert("Lütfen taşınacak en az bir il seçin."); return; }
+            
+            const selectedCities = Array.from(checkedBoxes).map(cb => cb.value);
             let count = 0;
             brickLayer.eachLayer(layer => {
-                if (layer.feature && layer.feature.properties.display_il === city) {
+                if (layer.feature && selectedCities.includes(layer.feature.properties.display_il)) {
                     customBrickRegions[layer.feature.properties.gid] = activeBrush;
                     updateLayerStyle(layer); count++;
                 }
             });
+            checkedBoxes.forEach(cb => cb.checked = false);
+            updateSelectedCityCount();
             selectDesignerRegion(selectedDesignerRegion); 
-            alert(`${city} ilindeki ${count} adet brick başarıyla ${activeBrush} bölgesine aktarıldı!`);
+            alert(`Seçilen ${selectedCities.length} ildeki toplam ${count} adet brick başarıyla ${activeBrush} bölgesine aktarıldı!`);
+        }
+
+        // Brick Autofill Arama (İlk 2-3 harf ile hem İl hem Brick adına göre filtreler)
+        function searchDesignBrick() {
+            if (!FILTERED_GEOJSON) return;
+            const inp = document.getElementById('designBrickInput');
+            const resDiv = document.getElementById('designBrickResults');
+            resDiv.innerHTML = '';
+
+            const parts = inp.value.split(';');
+            const currentQuery = parts[parts.length - 1].trim();
+            const norm = (s) => (s || '').toLocaleLowerCase('tr').replace(/\s/g, '');
+            const val = norm(currentQuery);
+
+            if (val.length < 2) {
+                resDiv.style.display = 'none';
+                return;
+            }
+
+            const existingBricks = parts.slice(0, -1).map(s => s.trim()).filter(Boolean);
+
+            const matches = FILTERED_GEOJSON.features.filter(f => {
+                const bName = norm(f.properties.display_name);
+                const ilName = norm(f.properties.display_il);
+                return bName.includes(val) || ilName.includes(val);
+            }).slice(0, 150);
+
+            if (matches.length === 0) {
+                resDiv.style.display = 'none';
+                return;
+            }
+
+            matches.forEach(m => {
+                const d = getData(m.properties);
+                const isAlreadyPicked = existingBricks.some(eb => norm(eb) === norm(d.brick));
+                const div = document.createElement('div');
+                div.className = 'res-item';
+                div.style.display = 'flex';
+                div.style.alignItems = 'center';
+                div.style.gap = '8px';
+                div.innerHTML = `
+                    <input type="checkbox" ${isAlreadyPicked ? 'checked' : ''} style="accent-color:var(--primary); width:14px; height:14px; cursor:pointer;">
+                    <div style="flex:1;">
+                        <b>${d.brick}</b><br><small style="color:#64748b">${d.subText}</small>
+                    </div>`;
+
+                const cb = div.querySelector('input[type="checkbox"]');
+
+                cb.onclick = (e) => {
+                    e.stopPropagation();
+                    let list = inp.value.split(';').map(s => s.trim()).filter(Boolean);
+                    if (list.length > 0 && norm(list[list.length - 1]) === val && !FILTERED_GEOJSON.features.some(f => norm(f.properties.display_name) === val)) {
+                        list.pop();
+                    }
+                    if (cb.checked) {
+                        if (!list.some(x => norm(x) === norm(d.brick))) list.push(d.brick);
+                    } else {
+                        list = list.filter(x => norm(x) !== norm(d.brick));
+                    }
+                    inp.value = list.length > 0 ? list.join('; ') + '; ' : '';
+                    inp.focus();
+                };
+
+                div.onclick = () => {
+                    let list = existingBricks.slice();
+                    if (!list.some(x => norm(x) === norm(d.brick))) list.push(d.brick);
+                    inp.value = list.join('; ');
+                    resDiv.style.display = 'none';
+                    const l = layerMap[m.properties.gid];
+                    if (l && !l._virtual) map.fitBounds(l.getBounds(), {maxZoom: 9});
+                };
+
+                resDiv.appendChild(div);
+            });
+
+            resDiv.style.display = 'block';
+        }
+        
+        // Toplu Brick Transferi (BOYA Butonu)
+        function bulkTransferBricks() {
+            if (!activeBrush) { alert("Lütfen önce listeden bir Bölge (Fırça) seçin!"); return; }
+            const rawInput = document.getElementById('designBrickInput').value; 
+            if (!rawInput.trim()) { alert("Lütfen brick adı yazın veya listeyi yapıştırın."); return; }
+            
+            const tokens = rawInput.split(/[\n,;]+/); 
+            let addedCount = 0; let notFound = [];
+            
+            tokens.forEach(q => {
+                let text = q.trim(); if(text.length < 2) return;
+                const searchVal = text.toLocaleLowerCase('tr').replace(/\s/g, ''); 
+                const norm = (s) => (s || '').toLocaleLowerCase('tr').replace(/\s/g, '');
+                
+                let matches = FILTERED_GEOJSON.features.filter(f => norm(f.properties.display_name) === searchVal);
+                if (matches.length === 0) matches = FILTERED_GEOJSON.features.filter(f => norm(f.properties.display_name).includes(searchVal));
+                
+                if (matches.length > 0) {
+                    matches.forEach(m => {
+                        const layer = layerMap[m.properties.gid]; 
+                        if (layer) { 
+                            customBrickRegions[m.properties.gid] = activeBrush;
+                            updateLayerStyle(layer); 
+                            addedCount++; 
+                        } 
+                    });
+                } else { 
+                    notFound.push(q.trim()); 
+                }
+            });
+            
+            document.getElementById('designBrickInput').value = ''; 
+            const resDiv = document.getElementById('designBrickResults');
+            if (resDiv) resDiv.style.display = 'none';
+            selectDesignerRegion(selectedDesignerRegion); 
+            
+            let msg = `${addedCount} adet brick başarıyla ${activeBrush} bölgesine aktarıldı!`; 
+            if (notFound.length > 0) msg += "\n\nBulunamayanlar: " + notFound.join(', '); 
+            alert(msg);
         }
 
         function resetDesigner() {
@@ -932,7 +1221,16 @@
         // ================= ARAMA & EXCEL FONKSİYONLARI =================
         function handlePaste(e) {
             const text = (e.clipboardData || window.clipboardData).getData('text');
-            if (/[\r\n\t]/.test(text)) { e.preventDefault(); const cleaned = text.split(/[\r\n\t]+/).map(s => s.trim()).filter(s => s.length > 0).join('; '); const inp = e.target; const start = inp.selectionStart, end = inp.selectionEnd; inp.value = inp.value.slice(0, start) + cleaned + inp.value.slice(end); document.getElementById('searchResults').style.display = 'none'; }
+            if (/[\r\n\t]/.test(text)) { 
+                e.preventDefault(); 
+                const cleaned = text.split(/[\r\n\t]+/).map(s => s.trim()).filter(s => s.length > 0).join('; '); 
+                const inp = e.target; 
+                const start = inp.selectionStart, end = inp.selectionEnd; 
+                inp.value = inp.value.slice(0, start) + cleaned + inp.value.slice(end); 
+                document.getElementById('searchResults').style.display = 'none'; 
+                const dRes = document.getElementById('designBrickResults');
+                if (dRes) dRes.style.display = 'none';
+            }
         }
 
         function searchBrick() {
@@ -999,8 +1297,148 @@
             let msg = activeMode.toUpperCase() + " listesine " + addedCount + " adet bölge eklendi."; if (notFound.length > 0) msg += "\n\nBulunamayanlar: " + notFound.join(', '); alert(msg);
         }
 
-        async function exportExcel() {
-            const btn = document.getElementById('btnDownload');
+        // ================= 1. ANALİZ MODU EXCEL ÇIKTISI (ORİJİNAL 24 SÜTUNLU KARŞILAŞTIRMA RAPORU) =================
+        async function exportAnalysisExcel() {
+            if (selectedEski.length === 0 && selectedYeni.length === 0) { alert("Lütfen önce seçim yapın."); return; }
+            
+            let hEski = 0, kEski = 0, iEski = 0, mgsEski = 0, ugsEski = 0, potEski = 0, drEski = 0; let detayEski = [];
+            sortByIdx(selectedEski, ratiosEski).forEach(layer => {
+                const d = getData(layer.feature.properties); const ratio = ratiosEski[d.gid] || 1.0;
+                const simH = d.raw_hedef * ratio, simK = d.raw_kutu * ratio, simI = d.raw_idx * ratio;
+                const simMGS = d.raw_mgs * ratio, simUGS = d.raw_ugs * ratio;
+                const simPot = d.raw_pot * ratio, simDr = d.raw_dr * ratio;
+                
+                hEski += simH; kEski += simK; iEski += simI; mgsEski += simMGS; ugsEski += simUGS;
+                potEski += simPot; drEski += simDr;
+                detayEski.push({ Brick: d.brick, Pot: simPot, Dr: simDr, MGS: simMGS, UGS: simUGS, Idx: simI, Hedef: simH, Kutu: simK, Real: simH>0?simK/simH:0 });
+            });
+
+            let hYeni = 0, kYeni = 0, iYeni = 0, mgsYeni = 0, ugsYeni = 0, potYeni = 0, drYeni = 0; let detayYeni = [];
+            sortByIdx(selectedYeni, ratiosYeni).forEach(layer => {
+                const d = getData(layer.feature.properties); const ratio = ratiosYeni[d.gid] || 1.0;
+                const simH = d.raw_hedef * ratio, simK = d.raw_kutu * ratio, simI = d.raw_idx * ratio;
+                const simMGS = d.raw_mgs * ratio, simUGS = d.raw_ugs * ratio;
+                const simPot = d.raw_pot * ratio, simDr = d.raw_dr * ratio;
+                
+                hYeni += simH; kYeni += simK; iYeni += simI; mgsYeni += simMGS; ugsYeni += simUGS;
+                potYeni += simPot; drYeni += simDr;
+                detayYeni.push({ Brick: d.brick, Pot: simPot, Dr: simDr, MGS: simMGS, UGS: simUGS, Idx: simI, Hedef: simH, Kutu: simK, Real: simH>0?simK/simH:0 });
+            });
+
+            const eskiBrickNames = detayEski.map(x => x.Brick);
+            const yeniBrickNames = detayYeni.map(x => x.Brick);
+
+            const rEski = hEski > 0 ? (kEski / hEski) : 0;
+            const rYeni = hYeni > 0 ? (kYeni / hYeni) : 0;
+            let idxDegisim = iEski > 0 ? (iYeni - iEski) / iEski : 0;
+            let kotaDegisim = hEski > 0 ? (hYeni - hEski) / hEski : 0;
+            let kutuDegisim = kEski > 0 ? (kYeni - kEski) / kEski : 0;
+            let realFark = rYeni - rEski;
+
+            const workbook = new ExcelJS.Workbook();
+            const ws = workbook.addWorksheet('Karşılaştırma Raporu', { views: [{ showGridLines: false }] });
+
+            ws.columns = [
+                { width: 22 }, { width: 9 }, { width: 9 }, { width: 8.5 }, { width: 8.5 }, { width: 11 }, { width: 8.5 }, { width: 8.5 }, { width: 8.5 }, // A-I (Eski)
+                { width: 2 }, // J (Boşluk)
+                { width: 22 }, { width: 9 }, { width: 9 }, { width: 8.5 }, { width: 8.5 }, { width: 11 }, { width: 8.5 }, { width: 8.5 }, { width: 8.5 }, // K-S (Yeni)
+                { width: 2 }, // T (Boşluk)
+                { width: 10 }, { width: 10 }, { width: 10 }, { width: 10 } // U-X (Değişimler)
+            ];
+
+            const headerRow = ws.addRow([
+                "MEVCUT YAPIDA", "Potansiyel", "Dr & Ecz", "MGS", "UGS", "TOTAL INDEX", "Kota", "Kutu", "Real",
+                "", 
+                "YENİ YAPIDA", "Potansiyel", "Dr & Ecz", "MGS", "UGS", "TOTAL INDEX", "Kota", "Kutu", "Real",
+                "", 
+                "Index\nDeğişim", "Kota\nDeğişim", "Kutu\nDeğişim", "Real\nFark"
+            ]);
+            
+            headerRow.height = 35; 
+            headerRow.font = { bold: true, name: 'Calibri', size: 11 };
+            headerRow.eachCell((cell) => { cell.alignment = { vertical: 'middle', horizontal: 'center', wrapText: true }; });
+
+            const totalRow = ws.addRow([
+                CURRENT_USER.label, potEski, drEski, mgsEski, ugsEski, iEski, hEski, kEski, rEski,
+                "", 
+                CURRENT_USER.label, potYeni, drYeni, mgsYeni, ugsYeni, iYeni, hYeni, kYeni, rYeni,
+                "", 
+                idxDegisim, kotaDegisim, kutuDegisim, realFark
+            ]);
+            totalRow.font = { bold: true };
+
+            const numberFmts = {
+                2: '0.00%', 3: '0.00%', 4: '0.00%', 5: '0.00%', 6: '0.00%', 7: '#,##0', 8: '#,##0', 9: '0.00%', 
+                12: '0.00%', 13: '0.00%', 14: '0.00%', 15: '0.00%', 16: '0.00%', 17: '#,##0', 18: '#,##0', 19: '0.00%', 
+                21: '0.00%', 22: '0.00%', 23: '0.00%', 24: '0.00%'  
+            };
+
+            for (let [col, fmt] of Object.entries(numberFmts)) {
+                totalRow.getCell(parseInt(col)).numFmt = fmt;
+            }
+
+            const thinBorder = {
+                top: { style: 'thin' }, left: { style: 'thin' },
+                bottom: { style: 'thin' }, right: { style: 'thin' }
+            };
+
+            headerRow.eachCell((cell, colNum) => {
+                if (colNum <= 9 || (colNum >= 11 && colNum <= 19) || (colNum >= 21 && colNum <= 24)) { cell.border = thinBorder; }
+            });
+
+            totalRow.eachCell((cell, colNum) => {
+                if (colNum <= 9 || (colNum >= 11 && colNum <= 19) || (colNum >= 21 && colNum <= 24)) {
+                    cell.border = thinBorder;
+                    if (colNum <= 9 || (colNum >= 11 && colNum <= 19)) {
+                        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFDE9D9' } };
+                    }
+                }
+            });
+
+            let maxRows = Math.max(detayEski.length, detayYeni.length);
+            for (let i = 0; i < maxRows; i++) {
+                let rowData = new Array(24).fill("");
+                let dE = i < detayEski.length ? detayEski[i] : null;
+                let dY = i < detayYeni.length ? detayYeni[i] : null;
+
+                if (dE) {
+                    rowData[0] = dE.Brick; rowData[1] = dE.Pot; rowData[2] = dE.Dr; rowData[3] = dE.MGS; rowData[4] = dE.UGS; rowData[5] = dE.Idx; rowData[6] = dE.Hedef; rowData[7] = dE.Kutu; rowData[8] = dE.Real;
+                }
+                if (dY) {
+                    rowData[10] = dY.Brick; rowData[11] = dY.Pot; rowData[12] = dY.Dr; rowData[13] = dY.MGS; rowData[14] = dY.UGS; rowData[15] = dY.Idx; rowData[16] = dY.Hedef; rowData[17] = dY.Kutu; rowData[18] = dY.Real;
+                }
+
+                const r = ws.addRow(rowData);
+
+                r.eachCell({ includeEmpty: true }, (cell, colNum) => {
+                    if (colNum <= 9 && i < detayEski.length) {
+                        cell.border = thinBorder;
+                        if (colNum === 1 && dE && !yeniBrickNames.includes(dE.Brick)) {
+                            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE74C3C' } }; 
+                            cell.font = { color: { argb: 'FFFFFFFF' }, bold: true }; 
+                        }
+                    }
+                    
+                    if (colNum >= 11 && colNum <= 19 && i < detayYeni.length) {
+                        cell.border = thinBorder;
+                        if (colNum === 11 && dY && !eskiBrickNames.includes(dY.Brick)) {
+                            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF10B981' } }; 
+                            cell.font = { color: { argb: 'FFFFFFFF' }, bold: true }; 
+                        }
+                    }
+                    
+                    if (numberFmts[colNum]) cell.numFmt = numberFmts[colNum];
+                });
+            }
+
+            const buffer = await workbook.xlsx.writeBuffer();
+            const blob = new Blob([buffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+            saveAs(blob, "Saha_INDEX_Excel_Ciktisi.xlsx");
+        }
+
+        // ================= 2. BÖLGE MİMARI EXCEL ÇIKTISI (HARİTA + BÖLGE ÖZET + TRANSFERLER) =================
+        async function exportDesignerExcel() {
+            const btn = document.getElementById('btnDownloadDesign');
             const originalText = btn.innerHTML;
             btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> İndiriliyor...';
             btn.classList.add('busy');
@@ -1038,7 +1476,7 @@
                     colorCell.border = thinBorder;
                     
                     let nameCell = wsMap.getCell(`X${legendRow}`);
-                    nameCell.value = "  " + reg;
+                    nameCell.value = "  " + reg + (createdRegions.has(reg) ? " (YENİ)" : "");
                     nameCell.font = { bold: true, color: { argb: 'FF475569' }, size: 11 };
                     nameCell.alignment = { vertical: 'middle' };
                     
@@ -1106,7 +1544,7 @@
                     let yreal = c.hedef > 0 ? c.kutu / c.hedef : 0;
                     
                     let row = wsOzet.addRow({
-                        bolge: reg,
+                        bolge: reg + (createdRegions.has(reg) ? " (YENİ)" : ""),
                         mpot: b.pot, mdr: b.dr, mmgs: b.mgs, mugs: b.ugs, midx: b.idx, mkota: b.hedef, mkutu: b.kutu, mreal: mreal,
                         ypot: getRichPct(b.pot, c.pot), 
                         ydr: getRichPct(b.dr, c.dr), 
@@ -1168,7 +1606,7 @@
 
                 const buffer = await workbook.xlsx.writeBuffer(); 
                 const blob = new Blob([buffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" }); 
-                saveAs(blob, "Saha_INDEX_Excel_Ciktisi.xlsx");
+                saveAs(blob, "Bolge_Tasarim_Raporu.xlsx");
 
             } catch (error) {
                 console.error("Excel oluşturulurken hata:", error); alert("Excel oluşturulurken bir hata oluştu.");
